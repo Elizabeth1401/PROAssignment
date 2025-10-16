@@ -1,0 +1,16 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.example.grpc";
+option java_outer_classname = "AnimalProductProto";
+
+service AnimalProductService {
+  rpc GetAnimalsByProduct (ProductRequest) returns (AnimalListResponse);
+  rpc GetProductsByAnimal (AnimalRequest) returns (ProductListResponse);
+}
+
+message ProductRequest { int32 product_id = 1; }
+message AnimalRequest  { int32 animal_id  = 1; }
+message Animal  { int32 id = 1; string registration_number = 2; }
+message Product { int32 id = 1; string name = 2; }
+message AnimalListResponse  { repeated Animal animals = 1; }
+message ProductListResponse { repeated Product products = 1; }
