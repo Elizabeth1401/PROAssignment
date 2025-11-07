@@ -15,40 +15,60 @@ public class AnimalProductServiceImpl extends AnimalProductServiceGrpc.AnimalPro
   {
     this.dbManager = dbManager;
   }
+  @Override
+  public void getAnimalsByProduct(ProductRequest request, StreamObserver<AnimalListResponse> responseObserver) {
+    try {
+      String productId = String.valueOf(request.getProductId());
+      List<String> registrationNumbers = dbManager.getAnimalsByProduct(productId);
 
-  @Override public void getAnimalsByProduct(ProductRequest req, StreamObserver<AnimalListResponse> out)
-  {
-    try
-    {
-      String productId = String.valueOf(req.getProductId());
-      List<String> animals = dbManager.getAnimalsByProduct(productId);
+      AnimalListResponse.Builder responseBuilder = AnimalListResponse.newBuilder();
 
-      AnimalListResponse response = AnimalListResponse.newBuilder().addAllRegistrationNumbers(animals).build();
+      int idCounter = 1;
+      for (String regNumber : registrationNumbers) {
+        Animal animal = Animal.newBuilder()
+                .setId(idCounter++)
+                .setRegistrationNumber(regNumber)
+                .build();
+        responseBuilder.addAnimals(animal);
+      }
 
-      out.onNext(response);
-      out.onCompleted();
-    }
-    catch (SQLException e)
-    {
-      out.onError(io.grpc.Status.INTERNAL.withDescription("Database error: " + e.getMessage()).asRuntimeException());
+      responseObserver.onNext(responseBuilder.build());
+      responseObserver.onCompleted();
+
+    } catch (SQLException e) {
+      e.printStackTrace();
+      responseObserver.onError(
+              io.grpc.Status.INTERNAL
+                      .withDescription("Database error while fetching animals: " + e.getMessage())
+                      .asRuntimeException());
     }
   }
+  @Override
+  public void getProductsByAnimal(AnimalRequest request, StreamObserver<ProductListResponse> responseObserver) {
+    try {
 
-  @Override public void getProductsByAnimal(AnimalRequest req, StreamObserver<ProductListResponse> out)
-  {
-    try
-    {
-      String registrationNumber = req.getRegistrationNumber();
-      List<String> products = dbManager.getProductsByAnimal(registrationNumber);
+      String registrationNumber = String.valueOf(request.getAnimalId());
+      List<String> productIds = dbManager.getProductsByAnimal(registrationNumber);
 
-      ProductListResponse response = ProductListResponse.newBuilder().addAllProductIds(products).build();
+      ProductListResponse.Builder responseBuilder = ProductListResponse.newBuilder();
 
-      out.onNext(response);
-      out.onCompleted();
-    }
-    catch (SQLException e)
-    {
-      out.onError(io.grpc.Status.INTERNAL.withDescription("Database error: " + e.getMessage()).asRuntimeException());
+      for (String id : productIds) {
+        Product product = Product.newBuilder()
+                .setId(Integer.parseInt(id))
+                .setName("Product " + id)
+                .build();
+        responseBuilder.addProducts(product);
+      }
+
+      responseObserver.onNext(responseBuilder.build());
+      responseObserver.onCompleted();
+
+    } catch (SQLException e) {
+      e.printStackTrace();
+      responseObserver.onError(
+              io.grpc.Status.INTERNAL
+                      .withDescription("Database error while fetching products: " + e.getMessage())
+                      .asRuntimeException());
     }
   }
 }
